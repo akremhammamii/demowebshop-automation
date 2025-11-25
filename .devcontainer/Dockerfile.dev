@@ -1,0 +1,63 @@
+# =============================================================================
+# Development Dockerfile - Standalone Container
+# Contains: Java 17 + Maven + Chrome + ChromeDriver + Development Tools
+# =============================================================================
+
+FROM maven:3.9-eclipse-temurin-17
+
+# Install Chrome and dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    gnupg2 \
+    ca-certificates \
+    unzip \
+    curl \
+    git \
+    # Add non-root user for VS Code
+    && groupadd -r vscode && useradd -r -g vscode -m -s /bin/bash vscode \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add Google Chrome repository (modern method)
+RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome-keyring.gpg && \
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list && \
+    apt-get update && \
+    apt-get install -y google-chrome-stable && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install ChromeDriver automatically (Chrome for Testing)
+RUN CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+\.\d+') && \
+    echo "Chrome version: $CHROME_VERSION" && \
+    CHROMEDRIVER_URL="https://storage.googleapis.com/chrome-for-testing-public/${CHROME_VERSION}/linux64/chromedriver-linux64.zip" && \
+    echo "Trying ChromeDriver URL: $CHROMEDRIVER_URL" && \
+    if wget --spider "$CHROMEDRIVER_URL" 2>/dev/null; then \
+    wget -O /tmp/chromedriver.zip "$CHROMEDRIVER_URL"; \
+    else \
+    echo "Exact version not found, using latest stable from Chrome for Testing" && \
+    LATEST_VERSION=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions.json" | grep -oP '"Stable":\{"channel":"Stable","version":"\K[^"]+') && \
+    CHROMEDRIVER_URL="https://storage.googleapis.com/chrome-for-testing-public/${LATEST_VERSION}/linux64/chromedriver-linux64.zip" && \
+    wget -O /tmp/chromedriver.zip "$CHROMEDRIVER_URL"; \
+    fi && \
+    unzip /tmp/chromedriver.zip -d /tmp && \
+    mv /tmp/chromedriver-linux64/chromedriver /usr/local/bin/ && \
+    chmod +x /usr/local/bin/chromedriver && \
+    rm -rf /tmp/* && \
+    # Verify installation
+    echo "Versions installées:" && \
+    google-chrome --version && \
+    chromedriver --version
+
+# Set up workspace
+WORKDIR /workspace
+
+# Pre-download Maven dependencies (cache optimization)
+COPY pom.xml .
+RUN mvn dependency:go-offline || true
+
+# Set proper permissions for vscode user
+RUN chown -R vscode:vscode /workspace
+
+# Switch to non-root user
+USER vscode
+
+# Default command (for development, this won't run tests automatically)
+CMD ["/bin/bash"]

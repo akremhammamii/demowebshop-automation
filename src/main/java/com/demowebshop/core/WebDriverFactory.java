@@ -1,53 +1,36 @@
 package com.demowebshop.core;
 
-import io.github.bonigarcia.wdm.WebDriverManager;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.edge.EdgeDriver;
-import org.openqa.selenium.edge.EdgeOptions;
-import org.openqa.selenium.firefox.FirefoxDriver;
-import org.openqa.selenium.firefox.FirefoxOptions;
+import com.demowebshop.config.ConfigurationManager;
+import java.time.Duration;
 
 public class WebDriverFactory {
-    public static WebDriver createDriver(String browser, boolean headless) {
-        if (browser == null || browser.isEmpty()) {
-            browser = "chrome";
+
+    public static WebDriver createDriver() {
+        ChromeOptions options = new ChromeOptions();
+
+        boolean headless = ConfigurationManager.getBool("headless", false);
+        if (headless) {
+            options.addArguments("--headless=new");
         }
 
-        browser = browser.toLowerCase();
+        options.addArguments("--no-sandbox");
+        options.addArguments("--disable-dev-shm-usage");
+        options.addArguments("--disable-gpu");
+        options.addArguments("--window-size=1920,1080");
 
-        switch (browser) {
-            case "chrome":
-                WebDriverManager.chromedriver().setup();
-                ChromeOptions chromeOptions = new ChromeOptions();
-                if (headless) {
-                    chromeOptions.addArguments("--headless=new");
-                }
-                chromeOptions.addArguments("--disable-gpu");
-                chromeOptions.addArguments("--window-size=1920,1080");
-                return new ChromeDriver(chromeOptions);
+        // options.setBinary("/usr/bin/google-chrome-stable"); // si nécessaire
 
-            case "firefox":
-                WebDriverManager.firefoxdriver().setup();
-                FirefoxOptions firefoxOptions = new FirefoxOptions();
-                if (headless) {
-                    firefoxOptions.addArguments("--headless");
-                }
-                return new FirefoxDriver(firefoxOptions);
+        WebDriver driver = new ChromeDriver(options);
+        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
 
-            case "edge":
-                WebDriverManager.edgedriver().setup();
-                EdgeOptions edgeOptions = new EdgeOptions();
-                if (headless) {
-                    edgeOptions.addArguments("--headless");
-                }
-                return new EdgeDriver(edgeOptions);
-
-            default:
-                throw new IllegalArgumentException(
-                        "Unsupported browser: " + browser +
-                                ". Supported browsers are: chrome, firefox, edge");
+        if (!headless) {
+            driver.manage().window().maximize();
         }
+
+        System.out.println("Chrome headless: " + headless);
+        return driver;
     }
 }

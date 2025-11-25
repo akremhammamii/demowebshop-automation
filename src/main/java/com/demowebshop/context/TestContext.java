@@ -16,7 +16,7 @@ public class TestContext {
     public TestContext() {
         String browser = ConfigurationManager.get("browser");
         boolean headless = ConfigurationManager.getBool("headless", false);
-        this.driver = WebDriverFactory.createDriver(browser, headless);
+        this.driver = WebDriverFactory.createDriver();
         DriverManager.setDriver(this.driver);
         this.helper = new ElementHelper(driver);
         this.pages = new PageManager(helper);

@@ -37,8 +37,18 @@ public class LoginPage extends BasePage {
     }
 
     public String getErrorMessage() {
-        if (isDisplayed(errorMessage)) {
-            return getText(errorMessage);
+        // Check for various possible error message elements on the login page
+        By[] errorSelectors = new By[] {
+                By.cssSelector(".validation-summary-errors"),
+                By.cssSelector(".message-error"),
+                By.cssSelector(".field-validation-error"),
+                By.id("Email-error"),
+                By.id("Password-error")
+        };
+        for (By selector : errorSelectors) {
+            if (isDisplayed(selector)) {
+                return getText(selector).trim();
+            }
         }
         return "";
     }
