@@ -1,0 +1,63 @@
+# Ignore Maven build artifacts
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Ignore IDE files
+.idea/
+*.iml
+*.iws
+*.ipr
+.settings/
+.classpath
+.project
+.vscode/
+*.swp
+*.swo
+*~
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Ignore test reports (keep structure, ignore generated files)
+allure-results/
+allure-report/
+target/surefire-reports/
+screenshots/
+*.log
+
+# Ignore compiled class files
+*.class
+
+# Ignore package files
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Ignore credentials and sensitive data
+*.env
+.env.local
+credentials.properties
+secrets.properties
+
+# Ignore temporary files
+*.tmp
+*.bak
+*.cache
+*.temp
+
+# Keep important directories but ignore contents
+!.gitkeep
