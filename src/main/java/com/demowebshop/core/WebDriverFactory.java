@@ -22,8 +22,11 @@ public class WebDriverFactory {
         options.addArguments("--disable-gpu");
         options.addArguments("--window-size=1920,1080");
 
-        // Google Chrome binary in Docker
-        options.setBinary("/usr/bin/google-chrome");
+        // Google Chrome binary in Docker (Linux only)
+        String os = System.getProperty("os.name").toLowerCase();
+        if (os.contains("nix") || os.contains("nux") || os.contains("aix")) {
+            options.setBinary("/usr/bin/google-chrome");
+        }
 
         WebDriver driver = new ChromeDriver(options);
 
