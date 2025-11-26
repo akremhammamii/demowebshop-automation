@@ -1,0 +1,67 @@
+# =============================================================================
+# Dockerfile pour exécution directe dans Docker Desktop
+# Usage: docker build -f Dockerfile.run -t demowebshop-run .
+#        docker run --rm demowebshop-run
+# =============================================================================
+
+FROM maven:3.9-eclipse-temurin-17
+
+# Install Chrome and dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    gnupg2 \
+    ca-certificates \
+    unzip \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add Google Chrome repository
+RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome-keyring.gpg && \
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list && \
+    apt-get update && \
+    apt-get install -y google-chrome-stable && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install ChromeDriver automatically
+RUN CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+\.\d+') && \
+    echo "Chrome version: $CHROME_VERSION" && \
+    CHROMEDRIVER_URL="https://storage.googleapis.com/chrome-for-testing-public/${CHROME_VERSION}/linux64/chromedriver-linux64.zip" && \
+    if wget --spider "$CHROMEDRIVER_URL" 2>/dev/null; then \
+    wget -O /tmp/chromedriver.zip "$CHROMEDRIVER_URL"; \
+    else \
+    LATEST_VERSION=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions.json" | grep -oP '"Stable":\{"channel":"Stable","version":"\K[^"]+') && \
+    CHROMEDRIVER_URL="https://storage.googleapis.com/chrome-for-testing-public/${LATEST_VERSION}/linux64/chromedriver-linux64.zip" && \
+    wget -O /tmp/chromedriver.zip "$CHROMEDRIVER_URL"; \
+    fi && \
+    unzip /tmp/chromedriver.zip -d /tmp && \
+    mv /tmp/chromedriver-linux64/chromedriver /usr/local/bin/ && \
+    chmod +x /usr/local/bin/chromedriver && \
+    rm -rf /tmp/*
+
+# Configure Maven to use /app/.m2 instead of /root/.m2
+# This avoids permission issues
+ENV MAVEN_CONFIG=/app/.m2
+ENV MAVEN_OPTS="-Duser.home=/app -Xmx1024m"
+
+# Set up workspace
+WORKDIR /app
+
+# Copy project files
+COPY pom.xml .
+COPY src ./src
+
+# Pre-download dependencies (cache layer)
+RUN mvn dependency:go-offline || true
+
+# Create .m2 directory with proper permissions
+RUN mkdir -p /app/.m2 && chmod -R 777 /app
+
+# Verify installation
+RUN echo "=== Versions installées ===" && \
+    java -version && \
+    mvn -version && \
+    google-chrome --version && \
+    chromedriver --version
+
+# Default command: run tests
+CMD ["mvn", "test", "-Dcucumber.filter.tags=not @bug"]

@@ -1,12 +1,5 @@
 pipeline {
-    agent {
-        dockerfile {
-            // Jenkins will build the image from this Dockerfile and run tests inside it
-            filename '.devcontainer/Dockerfile.dev'
-            // Additional Docker arguments for headless execution
-            args '--shm-size=2g'
-        }
-    }
+    agent any
     
     environment {
         // Ensure tests run in headless mode
@@ -16,27 +9,45 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Git checkout is automatic in declarative pipeline
-                echo 'Code checked out from SCM'
+                // Explicitly checkout source code before building Docker image
+                checkout scm
+                echo 'Code checked out successfully'
+                // Verify Dockerfile exists
+                script {
+                    if (isUnix()) {
+                        sh 'ls -la .devcontainer/Dockerfile.dev'
+                    } else {
+                        bat 'dir .devcontainer\\Dockerfile.dev'
+                    }
+                }
             }
         }
         
-        stage('Build') {
+        stage('Test in Docker') {
+            agent {
+                dockerfile {
+                    filename '.devcontainer/Dockerfile.dev'
+                    args '--shm-size=2g'
+                    // Important: Run on the same node where we checked out the code
+                    reuseNode true
+                }
+            }
             steps {
                 echo 'Compiling project...'
                 sh 'mvn clean compile'
-            }
-        }
-        
-        stage('Test') {
-            steps {
+                
                 echo 'Running Cucumber tests...'
-                // Run tests excluding known bugs
                 sh 'mvn test -Dcucumber.filter.tags="not @bug"'
             }
         }
         
         stage('Generate Reports') {
+            agent {
+                dockerfile {
+                    filename '.devcontainer/Dockerfile.dev'
+                    reuseNode true
+                }
+            }
             steps {
                 echo 'Generating Allure report...'
                 sh 'mvn allure:report || true'
@@ -52,7 +63,7 @@ pipeline {
             // Archive Cucumber reports
             archiveArtifacts artifacts: 'target/cucumber-reports/**/*', allowEmptyArchive: true
             
-            // Publish Allure report (requires Allure Jenkins plugin)
+            // Publish Allure report
             allure includeProperties: false,
                    jdk: '',
                    results: [[path: 'target/allure-results']]
@@ -64,7 +75,6 @@ pipeline {
         
         failure {
             echo 'Tests failed! ❌'
-            // You can add notifications here (email, Slack, etc.)
         }
     }
 }

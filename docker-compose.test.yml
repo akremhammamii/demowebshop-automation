@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  test-runner:
+    image: demowebshop-dev:latest
+    container_name: demowebshop-tests
+    user: root
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+    shm_size: 2g
+    command: mvn test -Dcucumber.filter.tags="not @bug"
