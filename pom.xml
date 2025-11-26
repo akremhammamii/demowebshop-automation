@@ -132,6 +132,7 @@
                     </includes>
                     <systemPropertyVariables>
                         <cucumber.publish.enabled>false</cucumber.publish.enabled>
+                        <allure.results.directory>target/allure-results</allure.results.directory>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
