@@ -1,56 +1,56 @@
 pipeline {
     agent any
     
-    environment {
-        // Ensure tests run in headless mode
-        MAVEN_OPTS = '-Xmx1024m -Dmaven.repo.local=$WORKSPACE/.m2/repository'
-    }
-    
     stages {
         stage('Checkout') {
             steps {
-                // Explicitly checkout source code before building Docker image
                 checkout scm
-                echo 'Code checked out successfully'
-                // Verify Dockerfile exists
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
                 script {
-                    if (isUnix()) {
-                        sh 'ls -la .devcontainer/Dockerfile.dev'
-                    } else {
-                        bat 'dir .devcontainer\\Dockerfile.dev'
+                    // Build the image using the Dockerfile which copies the source code
+                    bat 'docker build -t demowebshop-tests -f .devcontainer/Dockerfile.dev .'
+                }
+            }
+        }
+        
+        stage('Run Tests') {
+            steps {
+                script {
+                    // Remove any existing container with the same name
+                    bat 'docker rm -f runner || exit 0'
+                    
+                    // Run tests inside the container
+                    // We use 'returnStatus: true' to prevent the pipeline from stopping immediately if tests fail
+                    // This allows us to extract reports even after failure
+                    def exitCode = bat(returnStatus: true, script: 'docker run --name runner demowebshop-tests mvn clean test -Dcucumber.filter.tags="not @bug" allure:report')
+                    
+                    if (exitCode != 0) {
+                        currentBuild.result = 'UNSTABLE'
+                        echo "Tests failed with exit code ${exitCode}"
                     }
                 }
             }
         }
         
-        stage('Test in Docker') {
-            agent {
-                dockerfile {
-                    filename '.devcontainer/Dockerfile.dev'
-                    args '--shm-size=2g'
-                    // Important: Run on the same node where we checked out the code
-                    reuseNode true
-                }
-            }
+        stage('Extract Reports') {
             steps {
-                echo 'Compiling project...'
-                sh 'mvn clean compile'
-                
-                echo 'Running Cucumber tests...'
-                sh 'mvn test -Dcucumber.filter.tags="not @bug"'
-            }
-        }
-        
-        stage('Generate Reports') {
-            agent {
-                dockerfile {
-                    filename '.devcontainer/Dockerfile.dev'
-                    reuseNode true
+                script {
+                    // Create target directory if it doesn't exist
+                    bat 'if not exist target mkdir target'
+                    
+                    // Copy reports from the container to the workspace
+                    // We use || exit 0 to ensure the pipeline continues even if copy fails (e.g. if tests crashed early)
+                    bat 'docker cp runner:/app/target/surefire-reports ./target/surefire-reports || exit 0'
+                    bat 'docker cp runner:/app/target/cucumber-reports ./target/cucumber-reports || exit 0'
+                    bat 'docker cp runner:/app/target/site/allure-maven-plugin ./target/allure-results || exit 0'
+                    
+                    // Clean up container
+                    bat 'docker rm -f runner'
                 }
-            }
-            steps {
-                echo 'Generating Allure report...'
-                sh 'mvn allure:report || true'
             }
         }
     }
@@ -67,14 +67,6 @@ pipeline {
             allure includeProperties: false,
                    jdk: '',
                    results: [[path: 'target/allure-results']]
-        }
-        
-        success {
-            echo 'Tests passed successfully! ✅'
-        }
-        
-        failure {
-            echo 'Tests failed! ❌'
         }
     }
 }
