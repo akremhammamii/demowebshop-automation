@@ -33,7 +33,14 @@ Allez dans **Manage Jenkins** → **Plugins** → **Available**:
 
 ## Configuration des Outils (Obligatoire)
 
-### Installer Allure Commandline
+### 1. Installer Git
+1. Allez dans **Manage Jenkins** → **Tools** → **Git installations**.
+2. Cliquez sur **Add Git**.
+3. **Name**: `Default`
+4. **Path to Git executable**: `C:\Program Files\Git\bin\git.exe`
+5. Cliquez sur **Save**.
+
+### 2. Installer Allure Commandline
 1. Allez dans **Manage Jenkins** → **Tools** (ou Global Tool Configuration).
 2. Cherchez la section **Allure Commandline**.
 3. Cliquez sur **Add Allure Commandline**.
