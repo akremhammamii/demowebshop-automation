@@ -9,6 +9,10 @@ import java.time.Duration;
 public class WebDriverFactory {
 
     public static WebDriver createDriver() {
+
+        // Required for Linux/Docker (chromium-driver)
+        System.setProperty("webdriver.chrome.driver", "/usr/bin/chromedriver");
+
         ChromeOptions options = new ChromeOptions();
 
         boolean headless = ConfigurationManager.getBool("headless", false);
@@ -21,17 +25,18 @@ public class WebDriverFactory {
         options.addArguments("--disable-gpu");
         options.addArguments("--window-size=1920,1080");
 
-        // Set chromium binary path for Docker container
+        // Chromium binary in Debian/Ubuntu
         options.setBinary("/usr/bin/chromium");
 
         WebDriver driver = new ChromeDriver(options);
+
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
 
         if (!headless) {
             driver.manage().window().maximize();
         }
 
-        System.out.println("Chrome headless: " + headless);
+        System.out.println("Chromium headless: " + headless);
         return driver;
     }
 }

@@ -1,11 +1,10 @@
 # =============================================================================
-# Development Dockerfile - Standalone Container
-# Contains: Java 17 + Maven + Chrome + ChromeDriver + Development Tools
+# Development Dockerfile - Java 17 + Maven + Chromium + ChromiumDriver
 # =============================================================================
 
 FROM maven:3.9-eclipse-temurin-17
 
-# Install Chromium and ChromeDriver (stable for CI/CD)
+# INSTALL CHROMIUM + DRIVER (stable for CI/CD)
 RUN apt-get update && apt-get install -y \
     wget \
     gnupg2 \
@@ -21,18 +20,18 @@ RUN apt-get update && apt-get install -y \
     && chromium --version \
     && chromedriver --version
 
-# Set up workspace
+# Workspace
 WORKDIR /workspace
 
-# Pre-download Maven dependencies (cache optimization)
+# Cache Maven
 COPY pom.xml .
 RUN mvn dependency:go-offline || true
 
-# Set proper permissions for vscode user
+# Permissions
 RUN chown -R vscode:vscode /workspace
 
-# Switch to non-root user
+# User
 USER vscode
 
-# Default command (for development, this won't run tests automatically)
+# Default
 CMD ["/bin/bash"]
