@@ -1,13 +1,25 @@
 # Étape 1 : Build image
 FROM maven:3.9.2-eclipse-temurin-17 AS build
 
-# INSTALLER CHROMIUM + CHROMIUM-DRIVER (stable pour CI/CD)
+# Install Google Chrome stable and ChromeDriver
 RUN apt-get update && apt-get install -y \
-    chromium \
-    chromium-driver \
-    && rm -rf /var/lib/apt/lists/* \
+    wget \
+    gnupg2 \
+    unzip \
+    && wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome-keyring.gpg \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
+    && apt-get update \
+    && apt-get install -y google-chrome-stable \
+    && CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d '.' -f 1) \
+    && wget -q "https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/${CHROME_VERSION}.0.6778.69/linux64/chromedriver-linux64.zip" -O /tmp/chromedriver.zip || \
+    wget -q "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION}" -O /tmp/version && \
+    wget -q "https://chromedriver.storage.googleapis.com/$(cat /tmp/version)/chromedriver_linux64.zip" -O /tmp/chromedriver.zip \
+    && unzip /tmp/chromedriver.zip -d /tmp \
+    && mv /tmp/chromedriver-linux64/chromedriver /usr/local/bin/chromedriver 2>/dev/null || mv /tmp/chromedriver /usr/local/bin/ \
+    && chmod +x /usr/local/bin/chromedriver \
+    && rm -rf /tmp/* /var/lib/apt/lists/* \
     && echo "Versions installées:" \
-    && chromium --version \
+    && google-chrome --version \
     && chromedriver --version
 
 # Copier projet Maven

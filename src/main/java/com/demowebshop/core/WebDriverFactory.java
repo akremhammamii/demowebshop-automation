@@ -25,8 +25,8 @@ public class WebDriverFactory {
         options.addArguments("--disable-gpu");
         options.addArguments("--window-size=1920,1080");
 
-        // Chromium binary in Debian/Ubuntu
-        options.setBinary("/usr/bin/chromium");
+        // Google Chrome binary in Docker
+        options.setBinary("/usr/bin/google-chrome");
 
         WebDriver driver = new ChromeDriver(options);
 
