@@ -37,8 +37,9 @@ pipeline {
                         script: 'docker run --name demowebshop-runner %DOCKER_IMAGE%'
                     )
                     
-                    // Extract reports from container
-                    bat 'if not exist target mkdir target'
+                    // Clean old reports and create target directory
+                    bat 'if exist target rmdir /s /q target'
+                    bat 'mkdir target'
                     bat 'docker cp demowebshop-runner:/app/target/surefire-reports ./target/surefire-reports || exit 0'
                     bat 'docker cp demowebshop-runner:/app/target/cucumber-reports ./target/cucumber-reports || exit 0'
                     bat 'docker cp demowebshop-runner:/app/target/allure-results ./target/allure-results || exit 0'
