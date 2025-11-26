@@ -31,6 +31,16 @@ Allez dans **Manage Jenkins** → **Plugins** → **Available**:
 - [x] Git (déjà installé)
 - [x] JUnit (déjà installé)
 
+## Configuration des Outils (Obligatoire)
+
+### Installer Allure Commandline
+1. Allez dans **Manage Jenkins** → **Tools** (ou Global Tool Configuration).
+2. Cherchez la section **Allure Commandline**.
+3. Cliquez sur **Add Allure Commandline**.
+4. Nom: `allure` (ou laissez par défaut).
+5. Cochez **Install automatically**.
+6. Cliquez sur **Save**.
+
 ## Créer le Pipeline
 
 ### 1. Nouveau Job
