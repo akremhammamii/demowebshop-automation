@@ -21,7 +21,8 @@ public class WebDriverFactory {
         options.addArguments("--disable-gpu");
         options.addArguments("--window-size=1920,1080");
 
-        // options.setBinary("/usr/bin/google-chrome-stable"); // si nécessaire
+        // Set chromium binary path for Docker container
+        options.setBinary("/usr/bin/chromium");
 
         WebDriver driver = new ChromeDriver(options);
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
