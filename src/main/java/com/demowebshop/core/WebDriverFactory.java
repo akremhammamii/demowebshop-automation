@@ -10,9 +10,6 @@ public class WebDriverFactory {
 
     public static WebDriver createDriver() {
 
-        // Required for Linux/Docker (chromium-driver)
-        System.setProperty("webdriver.chrome.driver", "/usr/bin/chromedriver");
-
         ChromeOptions options = new ChromeOptions();
 
         boolean headless = ConfigurationManager.getBool("headless", false);
