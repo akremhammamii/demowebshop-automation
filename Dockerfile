@@ -1,23 +1,43 @@
 # Étape 1 : Build image
 FROM maven:3.9.2-eclipse-temurin-17 AS build
 
-# Install Google Chrome stable and ChromeDriver
-RUN apt-get update && apt-get install -y \
+# Install Chrome dependencies and tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
-    gnupg2 \
+    gnupg \
     unzip \
     ca-certificates \
-    && wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome-keyring.gpg \
+    curl \
+    fonts-liberation \
+    libnss3 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxdamage1 \
+    libxext6 \
+    libxi6 \
+    libxrandr2 \
+    libxrender1 \
+    libxtst6 \
+    xdg-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Google Chrome stable
+RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome-keyring.gpg \
     && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
     && apt-get update \
     && apt-get install -y google-chrome-stable \
-    && CHROME_MAJOR=$(google-chrome --version | awk '{print $3}' | cut -d '.' -f 1) \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install ChromeDriver
+RUN CHROME_MAJOR=$(google-chrome --version | awk '{print $3}' | cut -d '.' -f 1) \
+    && echo "Chrome version: ${CHROME_MAJOR}" \
     && CHROMEDRIVER_VERSION=$(wget -qO- "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_MAJOR}") \
+    && echo "ChromeDriver version: ${CHROMEDRIVER_VERSION}" \
     && wget -q "https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip" -O /tmp/chromedriver.zip \
-    && unzip /tmp/chromedriver.zip -d /tmp \
-    && mv /tmp/chromedriver /usr/local/bin/chromedriver \
+    && unzip /tmp/chromedriver.zip -d /usr/local/bin/ \
     && chmod +x /usr/local/bin/chromedriver \
-    && rm -rf /tmp/* /var/lib/apt/lists/* \
+    && rm -rf /tmp/* \
     && echo "Versions installées:" \
     && google-chrome --version \
     && chromedriver --version
