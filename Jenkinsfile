@@ -2,8 +2,7 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "demowebshop-tests"
-        CONTAINER_NAME = "demowebshop-container"
+        DOCKER_IMAGE = "demowebshop-tests"
     }
 
     stages {
@@ -17,34 +16,28 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                echo "🐳 Construction de l'image Docker de test..."
-                script {
-                    sh """
-                        docker build -t ${IMAGE_NAME} -f Dockerfile.dev .
-                    """
-                }
+                echo "🏗️ Construction de l'image Docker..."
+                bat """
+                    docker build -t %DOCKER_IMAGE% .
+                """
             }
         }
 
         stage('Run Tests in Docker') {
             steps {
-                echo "🧪 Exécution des tests dans Docker..."
-                script {
-                    sh """
-                        docker run --rm \
-                            -v \$(pwd):/workspace \
-                            -w /workspace \
-                            ${IMAGE_NAME} mvn clean test
-                    """
-                }
+                echo "🧪 Exécution des tests..."
+                bat """
+                    docker run --rm ^
+                        -v "%WORKSPACE%\\allure-results:/app/allure-results" ^
+                        %DOCKER_IMAGE%
+                """
             }
         }
 
         stage('Archive Reports') {
             steps {
-                echo "📦 Archivage des rapports..."
-                junit 'target/surefire-reports/*.xml'
-                allure includeProperties: false, jdk: '', results: [[path: 'target/allure-results']]
+                echo "📊 Archivage des rapports Allure..."
+                allure includeProperties: false, jdk: '', results: [[path: 'allure-results']]
             }
         }
     }
@@ -52,13 +45,15 @@ pipeline {
     post {
         always {
             echo "🧹 Nettoyage..."
-            sh "docker rm -f ${CONTAINER_NAME} 2>/dev/null || true"
-        }
-        success {
-            echo "✔️ Pipeline terminé avec succès."
+            bat """
+                docker system prune -f
+            """
         }
         failure {
             echo "❌ Le pipeline a échoué."
+        }
+        success {
+            echo "✅ Pipeline terminé avec succès."
         }
     }
 }
